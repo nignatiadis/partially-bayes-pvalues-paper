@@ -35,9 +35,9 @@ variance_distributions = (
 )
 
 noise_distributions = (
-    subbotin_3 = PGeneralizedGaussian(0, 1, 3),
+    subbotin_3 = PGeneralizedGaussian(0, 1, 3) / std(PGeneralizedGaussian(0, 1, 3)),
     normal = Normal(0, 1),  
-    laplace = Laplace(0, 1)
+    laplace = Laplace(0, 1) / std(Laplace(0, 1))
 )
 
 seeds = 1:50
@@ -48,20 +48,20 @@ variance_dbn, dbn, seed = key_combinations[task_id]
 effect_size = 2.5
 
 Random.seed!(1)
-Zs_mat =  rand(dbn, n, K)
-Hs = sample(1:n,n1)
+Zs_mat_init =  rand(dbn, n, K)
+Hs = sample(1:n,n1, replace=false)
 σs_squared = rand(variance_dbn, n)
 for i in Base.OneTo(seed)
-    Zs_mat .= rand(dbn, n, K)
-    Hs .= sample(1:n,n1)
+    Zs_mat_init .= rand(dbn, n, K)
+    Hs .= sample(1:n,n1, replace=false)
     σs_squared .= rand(variance_dbn, n)
 end
 σs = sqrt.(σs_squared)
 Hs_bool = falses(n)
 Hs_bool[Hs] .= true
 μs = zeros(n)
-μs[Hs] .= effect_size ./ sqrt(K)
-Zs_mat = (Zs_mat .+ μs) .* σs
+μs[Hs_bool] .= effect_size ./ sqrt(K)
+Zs_mat = (Zs_mat_init .+ μs) .* σs
 
 iidsamples = EmpirikosBNP.IIDSample.(collect.(eachrow(Zs_mat)))
 mu_hats = mean.(getfield.(iidsamples, :Z))
@@ -102,7 +102,7 @@ Ss = Empirikos.ScaledChiSquareSample.(vars, nobs.(iidsamples) .- 1)
 config_samples = EmpirikosBNP.ConfigurationSample.(iidsamples)
 
 neal2 = EmpirikosBNP.NealAlgorithm2(Ss)
-neal2_samples = fit!(neal2; samples=10_000, burnin=1_000)
+neal2_samples = fit!(neal2; samples=10_000, burnin=5_000)
 
 muhat_scaled = mu_hats .* sqrt.(nobs.(iidsamples))
 neal2_pvals = EmpirikosBNP._pval_fun(neal2_samples, muhat_scaled)
@@ -126,7 +126,7 @@ neal_polya_pvals = EmpirikosBNP._pval_fun(neal_polya_samples, mu_hats; method=:m
 
 
 
-oracle_pvals = EmpirikosBNP._pval_custom.(config_samples, mu_hats, 1.0, Ref(dbn); rtol=0.01)
+oracle_pvals = EmpirikosBNP._pval_custom.(config_samples, mu_hats, σs, Ref(dbn); rtol=0.01)
 
 results = (
     ttest = evaluate_method(Hs_bool, ttest_pvals),
