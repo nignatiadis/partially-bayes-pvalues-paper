@@ -34,18 +34,17 @@ variance_distributions = (
     Uniform = Uniform(0.5, 2.0)
 )
 
-noise_distributions = (
-    subbotin_3 = PGeneralizedGaussian(0, 1, 3) / std(PGeneralizedGaussian(0, 1, 3)),
-    normal = Normal(0, 1),  
-    laplace = Laplace(0, 1) / std(Laplace(0, 1))
-)
+subbotin_parameters = (1.0, 1.5, 2.0, 2.5, 3.0)
+
 
 seeds = 1:50
 
-key_combinations = collect(Iterators.product(variance_distributions, noise_distributions, seeds))
+key_combinations = collect(Iterators.product(variance_distributions, subbotin_parameters, seeds))
 
-variance_dbn, dbn, seed = key_combinations[task_id]
+variance_dbn, subbotin_param, seed = key_combinations[task_id]
 effect_size = 2.5
+
+dbn = PGeneralizedGaussian(0, 1, subbotin_param) / std(PGeneralizedGaussian(0, 1, subbotin_param))
 
 Random.seed!(1)
 Zs_mat_init =  rand(dbn, n, K)
@@ -144,6 +143,7 @@ jldsave(
     results = results,
     seed = seed,
     noise_dbn = dbn,
+    subbotin_param = subbotin_param,  
     variance_dbn = variance_dbn,
     effect_size = effect_size,
     K = K,
