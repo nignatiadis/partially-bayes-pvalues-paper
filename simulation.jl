@@ -26,7 +26,7 @@ using JLD2
 
 n = 10_000
 n1 = 1_000 #alternative proportion
-K=5
+K = 12
 
 
 variance_distributions = (
@@ -37,7 +37,7 @@ variance_distributions = (
 subbotin_parameters = (1.0, 1.5, 2.0, 2.5, 3.0)
 
 
-seeds = 1:50
+seeds = 1:100
 
 key_combinations = collect(Iterators.product(variance_distributions, subbotin_parameters, seeds))
 
