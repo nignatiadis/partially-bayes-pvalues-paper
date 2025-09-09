@@ -62,7 +62,7 @@ for (idx, key_idx) in enumerate(idx_set)
              label="Truth", 
              lw=1.3, 
              color=:darkblue,
-             alpha = 0.8,
+             alpha = 0.9,
              linestyle=:solid,
              title=L"\xi = %$(subbotin_param)",
              grid = true,
@@ -70,8 +70,8 @@ for (idx, key_idx) in enumerate(idx_set)
              gridstyle = :dot,
              framestyle = :box,
              legend=:topright,
-             xlabel=L"t",
-             ylabel=L"w(t)",
+             xlabel=L"z",
+             ylabel=L"w(z)",
              ylim = (0,0.8)
              )  
     else
@@ -79,14 +79,14 @@ for (idx, key_idx) in enumerate(idx_set)
              label=false,
              lw=1.3, 
              color=:darkblue,
-             alpha = 0.8,
+             alpha = 0.9,
              title=L"\xi = %$(subbotin_param)",
              grid = true,
              gridalpha = 0.3,
              gridstyle = :dot,
              framestyle = :box,
              legend=false,
-             xlabel=L"t",
+             xlabel=L"z",
              ylabel="",
              ylim = (0,0.8)
              )
@@ -129,7 +129,7 @@ end
 
 combined_plot = plot(plots_list..., 
                      layout=(1, 3), 
-                     size=(1000, 300),
+                     size=(850, 250),
                      left_margin=0Plots.mm,
                      right_margin=-1Plots.mm,
                      bottom_margin=3Plots.mm,
