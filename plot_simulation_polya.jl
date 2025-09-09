@@ -19,11 +19,23 @@ pgfplotsx()
 
 dir = @__DIR__
 
+variance_distributions = (
+    Dirac = Dirac(1.0),
+    Uniform = Uniform(0.5, 2.0)
+)
+
+subbotin_parameters = (1.0, 1.5, 2.0, 2.5, 3.0)
+
+seeds = 1:100
+
+key_combinations = collect(Iterators.product(variance_distributions, subbotin_parameters, seeds))
 
 
 
-dirac_var_idx = [1, 3, 5, 7, 9]
-uniform_var_idx = [2, 4, 6, 8, 10]
+#dirac_var_idx = [1, 3, 5, 7, 9]
+#uniform_var_idx = [2, 4, 6, 8, 10]
+dirac_var_idx = [1, 5, 9]
+uniform_var_idx = [2, 6, 10]
 
 for (idx_key, idx_set) in enumerate((dirac_var_idx, uniform_var_idx))
 plots_list = []
@@ -60,7 +72,7 @@ for (idx, key_idx) in enumerate(idx_set)
              legend=:topright,
              xlabel=L"t",
              ylabel=L"w(t)",
-             legendfontsize=5
+             ylim = (0,0.8)
              )  
     else
         myplot = plot(μs, pdf(true_dbn, μs), 
@@ -75,7 +87,8 @@ for (idx, key_idx) in enumerate(idx_set)
              framestyle = :box,
              legend=false,
              xlabel=L"t",
-             ylabel=""
+             ylabel="",
+             ylim = (0,0.8)
              )
     end
     
@@ -115,8 +128,8 @@ for (idx, key_idx) in enumerate(idx_set)
 end
 
 combined_plot = plot(plots_list..., 
-                     layout=(1, 5), 
-                     size=(1500, 300),
+                     layout=(1, 3), 
+                     size=(1000, 300),
                      left_margin=0Plots.mm,
                      right_margin=-1Plots.mm,
                      bottom_margin=3Plots.mm,
