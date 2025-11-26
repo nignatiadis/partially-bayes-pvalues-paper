@@ -118,7 +118,7 @@ pt = PolyaTreeDistribution(base=base=Empirikos.fold(TDist(8)/std(TDist(8))),
 
 
 neal8polya = EmpirikosBNP.NealAlgorithm8Polya(config_samples; base_polya=pt, neal_cp=deepcopy(neal2))
-neal_polya_samples = StatsBase.fit!(neal8polya; samples=5_000, burnin=1_000)
+neal_polya_samples = StatsBase.fit!(neal8polya; samples=10_000, burnin=2_000)
 
 
 neal_polya_pvals = EmpirikosBNP._pval_fun(neal_polya_samples, mu_hats; method=:monte_carlo)
