@@ -15,8 +15,6 @@ for i in $(seq 1 $N_BATCHES); do
     PREV=$JOB
 done
 
-JOB_FINAL=$(sbatch --parsable --dependency=afterok:$PREV 2_analyze.sbatch)
-echo "Analyze: $JOB_FINAL"
 
 echo ""
 echo "Monitor: squeue -u $USER"
