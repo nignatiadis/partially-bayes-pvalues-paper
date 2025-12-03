@@ -7,5 +7,5 @@
 #SBATCH --partition=caslake
 #SBATCH --output=logs/burnin_%j.out
 
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+
 julia setup_and_burnin.jl

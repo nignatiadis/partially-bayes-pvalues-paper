@@ -7,5 +7,4 @@
 #SBATCH --partition=caslake
 #SBATCH --output=logs/batch_%j.out
 
-cd "$( dirname "${BASH_SOURCE[0]}" )"
 julia run_batch.jl $1

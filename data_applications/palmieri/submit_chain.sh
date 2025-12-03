@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+
 mkdir -p logs
 
 N_BATCHES=40

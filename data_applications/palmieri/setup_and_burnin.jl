@@ -5,9 +5,7 @@ Pkg.activate(joinpath(@__DIR__, "..", ".."))
 using Empirikos
 using EmpirikosBNP
 using CSV
-using Statistics
-using Setfield
-using MosekTools   
+using Statistics   
 using MultipleTesting 
 using DataFrames
 using HypothesisTests
