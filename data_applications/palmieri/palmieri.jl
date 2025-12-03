@@ -62,7 +62,7 @@ Random.seed!(1)
 
 # Run Partially Bayes methods assuming normality
 neal2 = EmpirikosBNP.NealAlgorithm2(Ss)
-neal2_samples = fit!(neal2; samples=10_000, burnin=1_000)
+neal2_samples = fit!(neal2; samples=100_000, burnin=5_000)
 
 
 muhat_scaled = mu_hats .* sqrt.(nobs.(iidsamples))
@@ -115,7 +115,7 @@ end
 all_samples = []
 
 for i in 1:20
-    filename = "$(base_filename)_$(i).jld2"
+    filename = "$dir/$(base_filename)_$(i).jld2"
     data = load(filename)
     push!(all_samples, data["neal8polya_samples"])
 end
@@ -302,3 +302,15 @@ plot!(
 
 savefig("twod_histogram_palmieri.pdf")
 
+
+
+
+
+# Further visualization
+
+plot(length.(unique.(eachcol(neal2_samples.assignments))))
+
+
+
+all_σs = [pt.σ for pt in merged_samples.realized_pts]
+all_σs = [std(pt) for pt in merged_samples.realized_pts]

@@ -45,11 +45,13 @@ for (idx, key_idx) in enumerate(idx_set)
     
     file_path = joinpath(dir, "method_res_$(key_idx)_tree.jld2")
     data = load(file_path)
+
     neal_polya_samples = data["neal_polya_samples"]
-    
+    n_mc = length(neal_polya_samples.realized_pts)
+
     μs = -3:0.01:3
-    densities = zeros(length(μs), 5000)
-    for j in 1:5000
+    densities = zeros(length(μs), n_mc)
+    for j in Base.OneTo(n_mc)
         pt_sample = neal_polya_samples.realized_pts[j]
         densities[:, j] = pdf(pt_sample, μs)
     end
@@ -109,7 +111,7 @@ for (idx, key_idx) in enumerate(idx_set)
               label=false)
     end
     
-    pt_final = neal_polya_samples.realized_pts[5000]
+    pt_final = neal_polya_samples.realized_pts[end]
     if idx == 1
         plot!(myplot, μs, pdf(pt_final, μs), 
               lw=1, 
