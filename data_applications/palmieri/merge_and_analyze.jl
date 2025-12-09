@@ -19,7 +19,7 @@ const N_BATCHES = 40  # 40 batches × 2500 MC = 100,000 MC total
 mkpath(OUTPUT_DIR)
 
 pgfplotsx()
-theme(:default;
+theme(:default; 
     background_color_legend = :transparent,
     foreground_color_legend = :transparent,
     gridalpha = 0.3, gridstyle = :dot, framestyle = :box,
@@ -57,16 +57,19 @@ println("  Pólya PB:  $(sum(neal_polya_pvals .<= 0.001))")
 # QQ plot
 function plot_pvalues_qq(p1, p2, p3, names)
     n = length(p1)
-    theoretical_q = range(0, 1, length=n+1)[2:end]
+    theoretical_q = ((1:n) .- 0.5) ./ n
     breaks = 10.0 .^ (0:-1:-5)
     colors = ("#E69F00", "#56B4E9", "#009E73")
     
-    p = plot(theoretical_q, sort(p1), label=names[1], 
+    n_idx = findfirst(theoretical_q .> 0.2)
+    idx = vcat(1:n_idx, (n_idx+1):5:n)
+
+    p = plot(theoretical_q[idx], sort(p1)[idx], label=names[1], 
         xlabel=L"Uniform quantile $(P_i)$", ylabel=L"Empirical quantile $(P_i)$",
         xscale=:log10, yscale=:log10, xticks=breaks, yticks=breaks,
         color=colors[1], linewidth=1.7, legend=:topleft, size=(500, 450))
-    plot!(theoretical_q, sort(p2), label=names[2], color=colors[2], linewidth=1.7)
-    plot!(theoretical_q, sort(p3), label=names[3], color=colors[3], linewidth=1.7)
+    plot!(theoretical_q[idx], sort(p2)[idx], label=names[2], color=colors[2], linewidth=1.7)
+    plot!(theoretical_q[idx], sort(p3)[idx], label=names[3], color=colors[3], linewidth=1.7)
     plot!([minimum(theoretical_q), 1], [minimum(theoretical_q), 1], 
         color=:gray, linestyle=:dash, label="Uniform", linewidth=1.3)
     
@@ -78,7 +81,9 @@ function plot_pvalues_qq(p1, p2, p3, names)
     p
 end
 
-plot_pvalues_qq(ttest_pvals, neal2_pvals, neal_polya_pvals, ("t-test", "Normal PB", "Pólya PB"))
+p = plot_pvalues_qq(ttest_pvals, neal2_pvals, neal_polya_pvals, ("t-test", "Normal PB", "Pólya PB"))
+
+#savefig(joinpath(OUTPUT_DIR, "qqplot_palmieri.tikz"))
 savefig(joinpath(OUTPUT_DIR, "qqplot_palmieri.pdf"))
 
 # 2D histogram
@@ -130,3 +135,73 @@ end
 twod_histogram_plot
 
 savefig(joinpath(OUTPUT_DIR, "twod_histogram_palmieri.pdf"))
+
+
+
+
+
+# Marginal density plot for the real data analysis
+
+# Extract posterior samples for density estimation
+n_mc = length(merged_samples.realized_pts)
+μs = range(-4, 4, length=400)
+
+# Compute densities across all MC samples
+println("Computing posterior densities...")
+densities = zeros(length(μs), n_mc)
+@showprogress for j in Base.OneTo(n_mc)
+    pt_sample = merged_samples.realized_pts[j]
+    densities[:, j] = pdf(pt_sample, μs)
+end
+
+# Compute credible intervals
+lower_q = [quantile(densities[i, :], 0.005) for i in 1:length(μs)]
+upper_q = [quantile(densities[i, :], 0.995) for i in 1:length(μs)]
+median_density = [quantile(densities[i, :], 0.5) for i in 1:length(μs)]
+# Create the marginal density plot
+marginal_plot = plot(
+    xlabel=L"z\phantom{S_i^2}", 
+    ylabel=L"w(z)",
+    legend=:topright,
+    ylim=(0, 0.63),
+    grid=true,
+    gridalpha=0.3,
+    gridstyle=:dot,
+    framestyle=:box,
+    size=(350, 450)
+)
+
+# 99% credible band 
+plot!(marginal_plot, μs, lower_q, 
+      fillrange=upper_q,
+      fillalpha=0.55,
+      linealpha=0,
+      color=:gray,
+      label="99% CI")
+
+
+#plot!(marginal_plot, μs, median_density, 
+#      lw=1, 
+#      color=:green,
+#      alpha=0.6,
+#      label="Post.")
+
+# Last MC replicate (green, like in simulation)
+pt_final = merged_samples.realized_pts[end]
+plot!(marginal_plot, μs, pdf(pt_final, μs), 
+      lw=1, 
+      color=:green,
+      alpha=0.6,
+      label="Post.")
+
+# Reference: standard normal for comparison
+plot!(marginal_plot, μs, pdf.(Normal(0, 1), μs),
+      lw=1.3,
+      color=:darkblue,
+      alpha=0.9,
+      linestyle=:solid,
+      label=L"\mathrm{N}(0,1)")
+
+savefig(marginal_plot, joinpath(OUTPUT_DIR, "marginal_density_palmieri.pdf"))
+
+
