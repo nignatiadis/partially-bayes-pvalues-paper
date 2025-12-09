@@ -29,6 +29,8 @@ Pkg.instantiate()  # installs exact versions from Manifest.toml
 
 Key dependencies include `Empirikos`, `EmpirikosBNP`, `Distributions`, `JLD2`, `CSV`, `DataFrames`, `PGFPlotsX`, and `MultipleTesting`.
 
+**The bulk of algorithm implementation has been done in the `EmpirikosBNP` package, available at https://github.com/nignatiadis/EmpirikosBNP.jl/.**
+
 ## Reproducing the Simulations
 
 The simulations compare four methods: standard t-tests, Neal Algorithm 2 (normal base), Neal Algorithm 8 with Pólya trees, and an oracle that knows the true data-generating distribution.
