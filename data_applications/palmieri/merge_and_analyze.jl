@@ -16,6 +16,8 @@ const DIR = @__DIR__
 const CHECKPOINT_DIR = joinpath(DIR, "checkpoints")
 const OUTPUT_DIR = joinpath(DIR, "output")
 const N_BATCHES = 40  # 40 batches × 2500 MC = 100,000 MC total
+const FLIP_SIGNS = any(==("--flip"), ARGS)
+const SUFFIX = FLIP_SIGNS ? "_flip" : ""
 mkpath(OUTPUT_DIR)
 
 pgfplotsx()
@@ -27,7 +29,7 @@ theme(:default;
 )
 
 # Load data
-neal2_data = load(joinpath(CHECKPOINT_DIR, "neal2_results.jld2"))
+neal2_data = load(joinpath(CHECKPOINT_DIR, "neal2_results$(SUFFIX).jld2"))
 mu_hats = neal2_data["mu_hats"]
 vars = neal2_data["vars"]
 ttest_pvals = neal2_data["ttest_pvals"]
@@ -37,13 +39,13 @@ neal2_pvals = EmpirikosBNP._pval_fun(neal2_samples, mu_hats .* sqrt(12))
 
 # Merge batches
 println("Merging $N_BATCHES batches")
-all_samples = [load(joinpath(CHECKPOINT_DIR, "samples_batch_$i.jld2"), "samples") for i in 1:N_BATCHES]
+all_samples = [load(joinpath(CHECKPOINT_DIR, "samples_batch_$i$(SUFFIX).jld2"), "samples") for i in 1:N_BATCHES]
 merged_samples = EmpirikosBNP._merge_samples(all_samples...);
 all_samples = nothing; GC.gc()
 
 neal_polya_pvals = EmpirikosBNP._pval_fun(merged_samples, mu_hats; method=:monte_carlo)
 
-jldsave(joinpath(OUTPUT_DIR, "final_pvalues.jld2"),
+jldsave(joinpath(OUTPUT_DIR, "final_pvalues$(SUFFIX).jld2"),
     ttest_pvals = ttest_pvals,
     neal2_pvals = neal2_pvals,
     neal_polya_pvals = neal_polya_pvals
@@ -83,8 +85,8 @@ end
 
 p = plot_pvalues_qq(ttest_pvals, neal2_pvals, neal_polya_pvals, ("t-test", "Normal PB", "Pólya PB"))
 
-#savefig(joinpath(OUTPUT_DIR, "qqplot_palmieri.tikz"))
-savefig(joinpath(OUTPUT_DIR, "qqplot_palmieri.pdf"))
+#savefig(joinpath(OUTPUT_DIR, "qqplot_palmieri$(SUFFIX).tikz"))
+savefig(joinpath(OUTPUT_DIR, "qqplot_palmieri$(SUFFIX).pdf"))
 
 # 2D histogram
 vars_flat = log.(vars)
@@ -134,7 +136,7 @@ for (cutoff, color, style, label) in [
 end
 twod_histogram_plot
 
-savefig(joinpath(OUTPUT_DIR, "twod_histogram_palmieri.pdf"))
+savefig(joinpath(OUTPUT_DIR, "twod_histogram_palmieri$(SUFFIX).pdf"))
 
 
 
@@ -202,6 +204,5 @@ plot!(marginal_plot, μs, pdf.(Normal(0, 1), μs),
       linestyle=:solid,
       label=L"\mathrm{N}(0,1)")
 
-savefig(marginal_plot, joinpath(OUTPUT_DIR, "marginal_density_palmieri.pdf"))
-
+savefig(marginal_plot, joinpath(OUTPUT_DIR, "marginal_density_palmieri$(SUFFIX).pdf"))
 

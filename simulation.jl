@@ -1,4 +1,5 @@
 task_id = parse(Int, ARGS[1])  # SLURM_ARRAY_TASK_ID
+sens_only = length(ARGS) >= 2 && ARGS[2] == "--sens-only" 
 
 using Pkg
 Pkg.activate(".")
@@ -11,6 +12,9 @@ using HypothesisTests
 using StatsBase
 using Random
 using JLD2
+using RCall
+
+dir = @__DIR__
 
 # Overal simulation strategy
 
@@ -27,7 +31,8 @@ using JLD2
 n = 10_000
 n1 = 1_000 #alternative proportion
 K = 12
-
+α_bh = 0.1
+α_pval = 0.01
 
 variance_distributions = (
     Dirac = Dirac(1.0),
@@ -67,11 +72,24 @@ mu_hats = mean.(getfield.(iidsamples, :Z))
 vars = var.(EmpirikosBNP.iid_samples.(iidsamples))
 
 
-ttests = OneSampleTTest.(response.(iidsamples))
-ttest_pvals = pvalue.(ttests)
 
+# evaluation if only have indicator of discoveries
+function evaluate_rjs(Hs, rj_idx)
+    discoveries = sum(rj_idx)
+    true_discoveries = sum(rj_idx .& Hs)
+    false_discoveries = discoveries - true_discoveries
+    FDP = false_discoveries / max(discoveries, 1)
+    Power = true_discoveries / max( sum(Hs), 1)
 
-function evaluate_method(Hs, pvals; α_pval = 0.01, α_bh = 0.1)
+    (   
+    FDP_BH = FDP, 
+    Power_BH = Power, 
+    discoveries_BH = discoveries
+    )
+end
+
+# evaluation with p-values
+function evaluate_pvals(Hs, pvals; α_pval = α_pval, α_bh = α_bh)
 
     uniformity_pval = mean(pvals[.! Hs_bool] .<= α_pval) 
     power_pval = mean(pvals[Hs_bool] .<= α_pval)
@@ -79,23 +97,35 @@ function evaluate_method(Hs, pvals; α_pval = 0.01, α_bh = 0.1)
 
     bh_pvals = MultipleTesting.adjust(pvals, BenjaminiHochberg())
     rj_idx = bh_pvals .<= α_bh
-    discoveries = sum(rj_idx)
-    true_discoveries = sum(rj_idx .& Hs)
-    false_discoveries = discoveries - true_discoveries
-    FDP = false_discoveries / max(discoveries, 1)
-    Power = true_discoveries / max( sum(Hs), 1)
-
+    bh_results = evaluate_rjs(Hs, rj_idx)
     (
         Uniformity_Pval = uniformity_pval,
         Power_Pval = power_pval,
         discoveries_Pval = discoveries_pval,
-        FDP_BH = FDP, 
-        Power_BH = Power, 
-        discoveries_BH = discoveries
+        bh_results...
     )
 end
 
 
+
+sens_file = joinpath(dir, "SENS", "SENS_standalone.R")
+R"""
+source($(sens_file))
+"""
+
+R"""
+FDR_res <- SENS($Zs_mat, $α_bh, option=,'General')
+"""
+R"""
+SENS_rjs = FDR_res$de
+"""
+@rget SENS_rjs
+sens_eval = evaluate_rjs(Hs_bool, Bool.(SENS_rjs))
+
+if !sens_only
+
+ttests = OneSampleTTest.(response.(iidsamples))
+ttest_pvals = pvalue.(ttests)
 
 Ss = Empirikos.ScaledChiSquareSample.(vars, nobs.(iidsamples) .- 1)
 config_samples = EmpirikosBNP.ConfigurationSample.(iidsamples)
@@ -105,8 +135,6 @@ neal2_samples = fit!(neal2; samples=10_000, burnin=5_000)
 
 muhat_scaled = mu_hats .* sqrt.(nobs.(iidsamples))
 neal2_pvals = EmpirikosBNP._pval_fun(neal2_samples, muhat_scaled)
-
-
 
 
 pt = PolyaTreeDistribution(base=base=Empirikos.fold(TDist(8)/std(TDist(8))), 
@@ -128,16 +156,26 @@ neal_polya_pvals = EmpirikosBNP._pval_fun(neal_polya_samples, mu_hats; method=:m
 oracle_pvals = EmpirikosBNP._pval_custom.(config_samples, mu_hats, σs, Ref(dbn); rtol=0.01)
 
 results = (
-    ttest = evaluate_method(Hs_bool, ttest_pvals),
-    neal2 = evaluate_method(Hs_bool, neal2_pvals),
-    neal_polya = evaluate_method(Hs_bool, neal_polya_pvals),
-    oracle = evaluate_method(Hs_bool, oracle_pvals)
+    sens =  sens_eval,
+    ttest = evaluate_pvals(Hs_bool, ttest_pvals),
+    neal2 = evaluate_pvals(Hs_bool, neal2_pvals),
+    neal_polya = evaluate_pvals(Hs_bool, neal_polya_pvals),
+    oracle = evaluate_pvals(Hs_bool, oracle_pvals)
 )
-
-
-dir = @__DIR__
+end 
 
 store_name = joinpath(dir, "simulation_results", "method_res_$(task_id).jld2")
+
+
+if sens_only 
+_load = load(store_name)
+results =  (sens = sens_eval, _load["results"]...)
+end 
+
+
+
+
+
 jldsave(
     store_name;
     results = results,
@@ -152,7 +190,7 @@ jldsave(
     task_id = task_id
 )
 
-if seed==1 
+if seed==1 && !sens_only
     store_name2 = joinpath(dir, "simulation_results", "method_res_$(task_id)_tree.jld2")
     jldsave(
         store_name2;

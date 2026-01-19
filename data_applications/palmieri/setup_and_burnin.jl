@@ -13,13 +13,29 @@ using StatsBase
 using Distributions
 using Random
 using JLD2
+using LinearAlgebra
 
 CHECKPOINT_DIR = joinpath(DIR, "checkpoints")
+FLIP_SIGNS = any(==("--flip"), ARGS)
+FLIP_SEED = let idx = findfirst(==("--flip-seed"), ARGS)
+    idx === nothing ? 1 : parse(Int, ARGS[idx + 1])
+end
+SUFFIX = FLIP_SIGNS ? "_flip" : ""
 
 # Load data
 microarray = CSV.File(joinpath(DIR, "palmieri_pairwise.csv")) |> DataFrame
 identifiers = names(microarray)[4:end]
 diffs = Matrix(microarray[:, identifiers])
+
+# Optional sign-flip null check.
+sign_flips = Int[]
+plus_minus = ones(size(diffs, 2))
+if FLIP_SIGNS
+    Random.seed!(FLIP_SEED)
+    sign_flips = sample(1:size(diffs, 2), size(diffs, 2) ÷ 2; replace=false)
+    plus_minus[sign_flips] .= -1
+    diffs = diffs * diagm(plus_minus)
+end
 
 # Prepare samples
 iidsamples = EmpirikosBNP.IIDSample.(eachrow(diffs))
@@ -37,13 +53,17 @@ Random.seed!(1)
 neal2 = EmpirikosBNP.NealAlgorithm2(Ss)
 neal2_samples = fit!(neal2; samples=100_000, burnin=5_000)
 
-jldsave(joinpath(CHECKPOINT_DIR, "neal2_results.jld2"),
+jldsave(joinpath(CHECKPOINT_DIR, "neal2_results$(SUFFIX).jld2"),
     neal2 = neal2,
     neal2_samples = neal2_samples,
     mu_hats = mu_hats,
     vars = vars,
     Ss = Ss, 
-    ttest_pvals = ttest_pvals
+    ttest_pvals = ttest_pvals,
+    sign_flips = sign_flips,
+    plus_minus = plus_minus,
+    flip_seed = FLIP_SEED,
+    flip_enabled = FLIP_SIGNS
 )
 
 # Setup and burnin for neal8polya
@@ -62,5 +82,5 @@ println("Starting burnin...")
 _ = StatsBase.fit!(neal8polya; samples=1, burnin=2_000)
 
 
-jldsave(joinpath(CHECKPOINT_DIR, "neal8polya_state.jld2"), neal8polya = neal8polya)
+jldsave(joinpath(CHECKPOINT_DIR, "neal8polya_state$(SUFFIX).jld2"), neal8polya = neal8polya)
 println("Burnin complete")
