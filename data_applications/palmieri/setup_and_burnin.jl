@@ -28,13 +28,10 @@ identifiers = names(microarray)[4:end]
 diffs = Matrix(microarray[:, identifiers])
 
 # Optional sign-flip null check.
-sign_flips = Int[]
-plus_minus = ones(size(diffs, 2))
 if FLIP_SIGNS
     Random.seed!(FLIP_SEED)
-    sign_flips = sample(1:size(diffs, 2), size(diffs, 2) ÷ 2; replace=false)
-    plus_minus[sign_flips] .= -1
-    diffs = diffs * diagm(plus_minus)
+    sign_flips = 2 .* rand(Bernoulli(0.5), size(diffs)) .-1 
+    diffs = diffs .* sign_flips
 end
 
 # Prepare samples
