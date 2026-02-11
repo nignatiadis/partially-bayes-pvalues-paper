@@ -308,7 +308,7 @@ version = "0.6.3"
 
 [[deps.EmpirikosBNP]]
 deps = ["Distributions", "Empirikos", "LogarithmicNumbers", "ProgressMeter", "QuadGK", "Random", "Roots", "Setfield", "StatsBase"]
-git-tree-sha1 = "070fe0ae433bf6ebba45ed7e15c36915faf7ad20"
+git-tree-sha1 = "bedf0472891b6a52c4ae7fc3870e847e4d19aee2"
 repo-rev = "main"
 repo-url = "https://github.com/nignatiadis/EmpirikosBNP.jl"
 uuid = "ea739e02-4d30-4a0b-9098-9554a276d33c"
