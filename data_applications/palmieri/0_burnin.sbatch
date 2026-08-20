@@ -8,4 +8,4 @@
 #SBATCH --output=logs/burnin_%j.out
 
 
-julia setup_and_burnin.jl
+julia setup_and_burnin.jl --flip
