@@ -48,9 +48,9 @@ function load_and_process_results(dir::String; task_ids=1:500)
                 method = string(method_name),
                 
                 # Metrics
-                Uniformity_Pval = method_results.Uniformity_Pval,
-                Power_Pval = method_results.Power_Pval,
-                discoveries_Pval = method_results.discoveries_Pval,
+                Uniformity_Pval = hasproperty(method_results, :Uniformity_Pval) ? method_results.Uniformity_Pval : missing,
+                Power_Pval = hasproperty(method_results, :Power_Pval) ? method_results.Power_Pval : missing,
+                discoveries_Pval = hasproperty(method_results, :discoveries_Pval) ? method_results.discoveries_Pval : missing,
                 FDP_BH = method_results.FDP_BH,
                 Power_BH = method_results.Power_BH,
                 discoveries_BH = method_results.discoveries_BH

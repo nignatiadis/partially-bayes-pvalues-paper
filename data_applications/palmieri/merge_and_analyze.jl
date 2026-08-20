@@ -11,13 +11,15 @@ using StatsBase
 using Distributions
 using JLD2
 using ProgressMeter
+using MosekTools
 
-const DIR = @__DIR__
-const CHECKPOINT_DIR = joinpath(DIR, "checkpoints")
-const OUTPUT_DIR = joinpath(DIR, "output")
-const N_BATCHES = 40  # 40 batches × 2500 MC = 100,000 MC total
-const FLIP_SIGNS = any(==("--flip"), ARGS)
-const SUFFIX = FLIP_SIGNS ? "_flip" : ""
+DIR = @__DIR__
+OUTPUT_DIR = joinpath(DIR, "output")
+N_BATCHES = 40  # 40 batches × 2500 MC = 100,000 MC total
+FLIP_SIGNS = any(==("--flip"), ARGS)
+CHECKPOINT_DIR_STRING = FLIP_SIGNS ? "checkpoints/flip_files" : "checkpoints"
+CHECKPOINT_DIR = joinpath(DIR, CHECKPOINT_DIR_STRING)
+SUFFIX = FLIP_SIGNS ? "_flip" : ""
 mkpath(OUTPUT_DIR)
 
 pgfplotsx()
@@ -36,6 +38,12 @@ ttest_pvals = neal2_data["ttest_pvals"]
 neal2_samples = neal2_data["neal2_samples"];
 
 neal2_pvals = EmpirikosBNP._pval_fun(neal2_samples, mu_hats .* sqrt(12))
+
+Ss = neal2_data["Ss"]
+Zs = NormalChiSquareSample.( mu_hats .* sqrt(12), Ss)
+epb = Empirikos.EmpiricalPartiallyBayesTTest(;solver=Mosek.Optimizer,discretize_marginal=false)
+epb_fit = StatsBase.fit(epb, Zs)
+epb_pvals = epb_fit.pvalue
 
 # Merge batches
 println("Merging $N_BATCHES batches")
@@ -75,10 +83,11 @@ function plot_pvalues_qq(p1, p2, p3, names)
     plot!([minimum(theoretical_q), 1], [minimum(theoretical_q), 1], 
         color=:gray, linestyle=:dash, label="Uniform", linewidth=1.3)
     
-    annotate!(0.0095, 0.0005/4, text(L"\# P_i \leq 0.001", :left, 10))
-    annotate!(0.01, 0.0002/4, text("$(names[1]): $(sum(p1 .<= 0.001))", :left, 10))
-    annotate!(0.01, 0.0001/4, text("$(names[2]): $(sum(p2 .<= 0.001))", :left, 10))
-    annotate!(0.01, 0.000045/4, text("$(names[3]): $(sum(p3 .<= 0.001))", :left, 10))
+    _mult = FLIP_SIGNS ? 5 : 1
+    annotate!(0.0095, _mult*0.0005/4, text(L"\# P_i \leq 0.001", :left, 10))
+    annotate!(0.01, _mult*0.0002/4, text("$(names[1]): $(sum(p1 .<= 0.001))", :left, 10))
+    annotate!(0.01, _mult*0.0001/4, text("$(names[2]): $(sum(p2 .<= 0.001))", :left, 10))
+    annotate!(0.01, _mult*0.000045/4, text("$(names[3]): $(sum(p3 .<= 0.001))", :left, 10))
     hline!([0.001], linestyle=:dot, label=L"\alpha=0.001", color=:black)
     p
 end

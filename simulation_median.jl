@@ -117,8 +117,8 @@ end
 ttests = OneSampleTTest.(response.(iidsamples))
 ttest_pvals = pvalue.(ttests)
 
-wilcoxon_tests = ExactSignedRankTest.(response.(iidsamples))
-wilcoxon_pvals = min.(pvalue.(wilcoxon_tests), 1)
+sign_tests = SignTest.(response.(iidsamples))
+sign_pvals = min.(pvalue.(sign_tests), 1)
 
 Ss = Empirikos.ScaledChiSquareSample.(vars, nobs.(iidsamples) .- 1)
 config_samples = EmpirikosBNP.ConfigurationSample.(iidsamples)
@@ -157,7 +157,7 @@ oracle_pvals = _pval_custom2.(config_samples_median, median_hats, 1.0, Ref(dbn);
 
 results = (
     ttest = evaluate_pvals(Hs_bool, ttest_pvals),
-    wilcoxon = evaluate_pvals(Hs_bool, wilcoxon_pvals),
+    sign = evaluate_pvals(Hs_bool, sign_pvals),
     neal2 = evaluate_pvals(Hs_bool, neal2_pvals),
     neal_polya = evaluate_pvals(Hs_bool, neal_polya_pvals),
     oracle = evaluate_pvals(Hs_bool, oracle_pvals)

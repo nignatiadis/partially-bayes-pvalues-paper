@@ -36,6 +36,7 @@ key_combinations = collect(Iterators.product(variance_distributions, subbotin_pa
 #uniform_var_idx = [2, 4, 6, 8, 10]
 dirac_var_idx = [1, 5, 9]
 uniform_var_idx = [2, 6, 10]
+transf = identity
 
 for (idx_key, idx_set) in enumerate((dirac_var_idx, uniform_var_idx))
 plots_list = []
@@ -47,20 +48,20 @@ for (idx, key_idx) in enumerate(idx_set)
     data = load(file_path)
 
     neal_polya_samples = data["neal_polya_samples"]
-    n_mc = length(neal_polya_samples.realized_pts)
+    @show n_mc = length(neal_polya_samples.realized_pts)
 
-    μs = -3:0.01:3
+    μs = -4:0.01:4
     densities = zeros(length(μs), n_mc)
     for j in Base.OneTo(n_mc)
         pt_sample = neal_polya_samples.realized_pts[j]
         densities[:, j] = pdf(pt_sample, μs)
     end
     
-    lower_q = [quantile(densities[i, :], 0.005) for i in 1:length(μs)]
-    upper_q = [quantile(densities[i, :], 0.995) for i in 1:length(μs)]
+    lower_q = transf.([quantile(densities[i, :], 0.005) for i in 1:length(μs)])
+    upper_q = transf.([quantile(densities[i, :], 0.995) for i in 1:length(μs)])
     
     if idx == 1
-        myplot = plot(μs, pdf(true_dbn, μs), 
+        myplot = plot(μs, transf.(pdf(true_dbn, μs)), 
              label="Truth", 
              lw=1.3, 
              color=:darkblue,
@@ -74,10 +75,10 @@ for (idx, key_idx) in enumerate(idx_set)
              legend=:topright,
              xlabel=L"z",
              ylabel=L"w(z)",
-             ylim = (0,0.8)
+             ylim = transf.((0,0.8))
              )  
     else
-        myplot = plot(μs, pdf(true_dbn, μs), 
+        myplot = plot(μs, transf.(pdf(true_dbn, μs)), 
              label=false,
              lw=1.3, 
              color=:darkblue,
@@ -90,7 +91,7 @@ for (idx, key_idx) in enumerate(idx_set)
              legend=false,
              xlabel=L"z",
              ylabel="",
-             ylim = (0,0.8)
+             ylim = transf.((0,0.8))
              )
     end
     
@@ -113,13 +114,13 @@ for (idx, key_idx) in enumerate(idx_set)
     
     pt_final = neal_polya_samples.realized_pts[end]
     if idx == 1
-        plot!(myplot, μs, pdf(pt_final, μs), 
+        plot!(myplot, μs, transf.(pdf(pt_final, μs)), 
               lw=1, 
               color=:green,
               alpha=0.6,
               label="Post.")
     else
-        plot!(myplot, μs, pdf(pt_final, μs), 
+        plot!(myplot, μs, transf.(pdf(pt_final, μs)), 
               lw=1, 
               color=:green,
               alpha=0.6,
@@ -142,3 +143,7 @@ combined_plot
 
 savefig(combined_plot, "posterior_polya_trees_$(idx_key).pdf")
 end
+
+
+
+

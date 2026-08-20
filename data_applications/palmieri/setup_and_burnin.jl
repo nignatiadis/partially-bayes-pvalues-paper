@@ -58,7 +58,6 @@ jldsave(joinpath(CHECKPOINT_DIR, "neal2_results$(SUFFIX).jld2"),
     Ss = Ss, 
     ttest_pvals = ttest_pvals,
     sign_flips = sign_flips,
-    plus_minus = plus_minus,
     flip_seed = FLIP_SEED,
     flip_enabled = FLIP_SIGNS
 )
