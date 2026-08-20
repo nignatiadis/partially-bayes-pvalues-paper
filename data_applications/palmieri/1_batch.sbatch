@@ -7,4 +7,4 @@
 #SBATCH --partition=caslake
 #SBATCH --output=logs/batch_%j.out
 
-julia run_batch.jl $1
+julia run_batch.jl $1 --flip
